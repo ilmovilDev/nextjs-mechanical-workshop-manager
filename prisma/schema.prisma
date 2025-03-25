@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Customer {
+  id        String @id @default(uuid())
+  firstname String
+  lastname  String
+  email     String @unique
+  cpf       String @unique
+  phone     String @unique
+  userId    String
+  address   String
+
+  cars   Car[]
+  orders Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Car {
+  id      String   @id @default(uuid())
+  brand   String
+  model   String
+  year    Int
+  plate   String   @unique
+  color   String
+  engine  String // Cilindrada 1.0 1.6 2.0
+  ownerId String
+  owner   Customer @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  orders Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Mechanic {
+  id         String  @id @default(uuid())
+  firstname  String
+  lastname   String
+  email      String  @unique
+  cpf        String  @unique
+  phone      String  @unique
+  salary     Decimal @db.Decimal(10, 2)
+  percentage Decimal @default(0) @db.Decimal(10, 2)
+  orders     Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id           String      @id @default(uuid())
+  customerId   String
+  customer     Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  carId        String
+  car          Car         @relation(fields: [carId], references: [id], onDelete: Cascade)
+  mechanicId   String
+  mechanic     Mechanic    @relation(fields: [mechanicId], references: [id], onDelete: Cascade)
+  failure      String
+  description  String
+  observations String[]
+  warranty     Int
+  status       OrderStatus @default(PENDING)
+  totalCost    Decimal     @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum OrderStatus {
+  PENDING // Orden pendiente de ser procesada
+  IN_PROGRESS // Orden en progreso (en reparación)
+  WAITING_FOR_PARTS // Esperando repuestos para continuar la reparación
+  WAITING_FOR_APPROVAL // Esperando aprobación del cliente para continuar con el trabajo
+  COMPLETED // Orden completada (reparación finalizada)
+  CANCELLED // Orden cancelada
+}
